@@ -130,3 +130,7 @@ $RECYCLE.BIN/
 *.lnk
 
 CMakeLists.txt
+
+client/client
+
+server/server
