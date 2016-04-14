@@ -54,30 +54,62 @@ int main(int argc, char *argv[])
 	if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
 		error("ERROR connecting");
 	}
-	while (1) {
-		printf("Command: ");
+
+	char* commands[] = {"BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "RETURN ", "BUY\n"};
+	char* ticketDB[15];
+
+	size_t cmdCount = 0;
+	while (cmdCount <= 14) {
+		//printf("Command: ");
 		bzero(buffer, 256);
-		fgets(buffer, 255, stdin);
-		n = write(sockfd, buffer, strlen(buffer));
+		//fgets(buffer, 255, commands[0]);
 
-		if (n < 0) {
-			error("ERROR writing to socket");
+		if (strncmp(commands[cmdCount], "BUY", 3) == 0) {
+			n = write(sockfd, commands[cmdCount], strlen(commands[cmdCount]));
+			if (n < 0) {
+				error("ERROR writing to socket");
+			}
+
+			bzero(buffer, 256);
+			n = read(sockfd, buffer, 255);
+			if (n < 0) {
+				error("ERROR reading from socket");
+			}
+			//memcpy(ticketDB[cmdCount], buffer, sizeof(buffer));
+
+			printf("[SERVER] : %s", buffer);
 		}
+		else if (strncmp(commands[cmdCount], "RETURN", 6) == 0) {
 
-		bzero(buffer, 256);
-		n = read(sockfd, buffer, 255);
+			strncat(buffer, ticketDB[1], 5); // TODO
 
-		if (n < 0) {
-			error("ERROR reading from socket");
+			n = write(sockfd, buffer, strlen(buffer));
+			if (n < 0) {
+				error("ERROR writing to socket");
+			}
+
+			bzero(buffer, 256);
+			n = read(sockfd, buffer, 255);
+			if (n < 0) {
+				error("ERROR reading from socket");
+			}
+
+
+
+			printf("[SERVER] : %s", buffer);
 		}
-
-		printf("[SERVER] : %s", buffer);
-
-		if (buffer[0] == 'X') {
-			break;
-		}
+		cmdCount++;
 	}
 	close(sockfd);
+
+	/*
+	printf("                 Status          Number\n");
+	for(int i = 0; i <= 19; ++i) {
+		printf("Ticket [ %2i ]:   ", (i + 1));
+		printf("%s", ticket[i].status ? "Available   -   " : "Unavailable -   ");
+		printf("%i\n", ticket[i].number);
+	}
+	*/
 
 	return EXIT_SUCCESS;
 }
