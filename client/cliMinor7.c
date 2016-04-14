@@ -55,61 +55,80 @@ int main(int argc, char *argv[])
 		error("ERROR connecting");
 	}
 
-	char* commands[] = {"BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "BUY\n", "RETURN ", "BUY\n"};
-	char* ticketDB[15];
+	char* commands[] = {"BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "BUY", "RETURN ", "BUY"};
+	char ticketDB[15][256];
+	for(int i = 0; i <= 14; ++i) {
+		strncpy(ticketDB[i], "0\0", 2);
+	}
 
 	size_t cmdCount = 0;
 	while (cmdCount <= 14) {
-		//printf("Command: ");
 		bzero(buffer, 256);
-		//fgets(buffer, 255, commands[0]);
 
 		if (strncmp(commands[cmdCount], "BUY", 3) == 0) {
+			printf("[CLIENT] : BUY\n");
+
 			n = write(sockfd, commands[cmdCount], strlen(commands[cmdCount]));
 			if (n < 0) {
 				error("ERROR writing to socket");
 			}
 
-			bzero(buffer, 256);
-			n = read(sockfd, buffer, 255);
+			n = read(sockfd, buffer, 6);
 			if (n < 0) {
 				error("ERROR reading from socket");
 			}
-			//memcpy(ticketDB[cmdCount], buffer, sizeof(buffer));
 
-			printf("[SERVER] : %s", buffer);
+			if (strncmp(buffer, "FULL", 4) == 0) {
+				printf("[SERVER] : Sold out\n");
+				printf("[CLIENT] : Buy failed\n");
+			}
+			else {
+				for(int i = 0; i <= 14; ++i) {
+					if (strcmp(ticketDB[i], "0") == 0) {
+						strncpy(ticketDB[i], buffer, 6);
+						printf("[SERVER] : %s\n", ticketDB[i]);
+						break;
+					}
+				}
+			}
 		}
 		else if (strncmp(commands[cmdCount], "RETURN", 6) == 0) {
+			printf("[CLIENT] : RETURN %s\n", ticketDB[0]);
 
-			strncat(buffer, ticketDB[1], 5); // TODO
-
+			sprintf(buffer, "%s%s", commands[cmdCount], ticketDB[0]);
 			n = write(sockfd, buffer, strlen(buffer));
 			if (n < 0) {
 				error("ERROR writing to socket");
 			}
 
 			bzero(buffer, 256);
-			n = read(sockfd, buffer, 255);
+			n = read(sockfd, buffer, 8);
 			if (n < 0) {
 				error("ERROR reading from socket");
 			}
 
-
-
-			printf("[SERVER] : %s", buffer);
+			if (strncmp(buffer, "INVALID", 8) == 0) {
+				printf("[SERVER] : Ticket number is invalid\n");
+			}
+			else if (strncmp(buffer, "UNAVAIL", 8) == 0) {
+				printf("[SERVER] : Ticket belongs to different client\n");
+			}
+			else {
+				printf("[SERVER] : RETURN %s\n", ticketDB[0]);
+				//ticketDB[0][0] = '0';
+				//ticketDB[0][1] = '\0';
+				strncpy(ticketDB[0], "0\0", 2);
+				printf("[CLIENT] : TICKET %s returned\n", buffer);
+			}
 		}
 		cmdCount++;
 	}
 	close(sockfd);
 
-	/*
-	printf("                 Status          Number\n");
-	for(int i = 0; i <= 19; ++i) {
-		printf("Ticket [ %2i ]:   ", (i + 1));
-		printf("%s", ticket[i].status ? "Available   -   " : "Unavailable -   ");
-		printf("%i\n", ticket[i].number);
+	printf("[CLIENT] : Ticket Database\n");
+	for(int i = 0; i <= 14; ++i) {
+		printf("%11s[ %2i ] - %s\n", "", i, ticketDB[i]);
 	}
-	*/
 
 	return EXIT_SUCCESS;
 }

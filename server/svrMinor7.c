@@ -141,24 +141,24 @@ void processRequest(int sock, struct Tickets *ticket, size_t clientNum)
 
 		// Processes commands and modifies tickets as requested
 		if (strncmp(command, "BUY", 3) == 0) {
-			printf("[CLIENT %lu] : %s", clientNum, command);
+			printf("[CLIENT %lu] : %s\n", clientNum, command);
 			for(int i = 0; i <= 19; ++i) {
 				if (ticket[i].status == true) {
 					printf("[SERVER X] : Client %lu bought %i\n", clientNum, ticket[i].number);
 					ticket[i].status = false;
 					ticket[i].client = clientNum;
 
-					char text[7];
-					sprintf(text, "%d\n", ticket[i].number);
-					n = write(sock, text, 7);
+					char text[6];
+					sprintf(text, "%d", ticket[i].number);
+					n = write(sock, text, 6);
 					if (n < 0) {
 						error("ERROR writing to socket");
 					}
 					break;
 				}
 				else if (ticket[19].status == false && i == 19) {
-					printf("[SERVER X] : Database full\n");
-					n = write(sock, "Database full\n", 15);
+					printf("[SERVER X] : Sold out\n");
+					n = write(sock, "FULL", 5);
 					if (n < 0) {
 						error("ERROR writing to socket");
 					}
@@ -167,16 +167,16 @@ void processRequest(int sock, struct Tickets *ticket, size_t clientNum)
 			}
 		}
 		else if (strncmp(command, "RETURN", 6) == 0) {
-			printf("[CLIENT %lu] : %s %s", clientNum, command, returnNum);
+			printf("[CLIENT %lu] : %s %s\n", clientNum, command, returnNum);
 			for(int i = 0; i <= 19; ++i) {
 				if (ticket[i].number == atoi(returnNum) && ticket[i].client == clientNum && ticket[i].status == false) {
 					printf("[SERVER X] : Client %lu returned %i\n", clientNum, ticket[i].number);
 					ticket[i].status = true;
 					ticket[i].client = 0;
 
-					char text[15];
-					sprintf(text, "%s %s", command, returnNum);
-					n = write(sock, text, 15);
+					char text[8];
+					sprintf(text, "%i", ticket[i].number);
+					n = write(sock, text, 8);
 					if (n < 0) {
 						error("ERROR writing to socket");
 					}
@@ -184,14 +184,14 @@ void processRequest(int sock, struct Tickets *ticket, size_t clientNum)
 				}
 				else if (ticket[i].number == atoi(returnNum) && ticket[i].client != clientNum && ticket[i].status == false) {
 					printf("[SERVER X] : Client %lu does not own %i\n", clientNum, ticket[i].number);
-					n = write(sock, "Ticket number belongs to different client\n", 23);
+					n = write(sock, "UNAVAIL", 8);
 					if (n < 0) {
 						error("ERROR writing to socket");
 					}
 				}
 				else if (i == 19) {
 					printf("[SERVER X] : Invalid ticket number %s\n", returnNum);
-					n = write(sock, "Invalid ticket number\n", 23);
+					n = write(sock, "INVALID", 8);
 					if (n < 0) {
 						error("ERROR writing to socket");
 					}
